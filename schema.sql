@@ -4,6 +4,7 @@ SET NAMES utf8mb4;
 
 DROP TABLE IF EXISTS results;
 DROP TABLE IF EXISTS attendance;
+DROP TABLE IF EXISTS class_transfers;
 DROP TABLE IF EXISTS enrollments;
 DROP TABLE IF EXISTS class_subject_offerings;
 DROP TABLE IF EXISTS classes;
@@ -119,6 +120,33 @@ CREATE TABLE class_subject_offerings (
         FOREIGN KEY (teacher_staff_no) REFERENCES teachers (staff_no)
         -- RESTRICT protects teaching history; CASCADE follows staff-number
         -- corrections to the teacher's natural key.
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE class_transfers (
+    transfer_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    enrollment_id INT UNSIGNED NOT NULL,
+    from_class_id INT UNSIGNED NOT NULL,
+    to_class_id INT UNSIGNED NOT NULL,
+    transferred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (transfer_id),
+    KEY ix_class_transfers_enrollment_time (enrollment_id, transferred_at),
+    CONSTRAINT chk_class_transfers_different_classes
+        CHECK (from_class_id <> to_class_id),
+    CONSTRAINT fk_class_transfers_enrollment
+        FOREIGN KEY (enrollment_id) REFERENCES enrollments (enrollment_id)
+        -- RESTRICT preserves transfer history; CASCADE follows a corrected
+        -- enrollment identifier.
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_class_transfers_from_class
+        FOREIGN KEY (from_class_id) REFERENCES classes (class_id)
+        -- RESTRICT preserves the source class in history; CASCADE follows a
+        -- corrected class identifier.
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_class_transfers_to_class
+        FOREIGN KEY (to_class_id) REFERENCES classes (class_id)
+        -- RESTRICT preserves the destination class in history; CASCADE
+        -- follows a corrected class identifier.
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
